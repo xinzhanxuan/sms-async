@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>学员信息管理系统 - 学生信息列表</title>
+  <style>
+  table {
+    width: 1000px;
+  }
+
+  table thead tr th {
+    height: 35px;
+  }
+
+  table tbody tr td {
+    height: 25px;
+  }
+
+  #dvEdit div {
+    margin-bottom: 20px;
+  }
+  </style>
+  <script src="./js/jquery-3.2.1.js"></script>
+  <script src="./js/template-web.js"></script>
+  <script>
+
+
+  // 封装一个加载所有学员数据的函数
+  function loadAllStudents() {
+     // 1. 向服务器发起 ajax 请求
+    $.ajax({
+      url: '/list',
+      method: 'get',
+      dataType: 'json',
+      success: function (data) {
+        // console.log(data);
+
+        if (data.status === 0) {
+          // 成功！
+          // 通过 art-template 读取模板代码并替换
+          // 2. 将获取到的数据通过 art-template 模板引擎渲染到 tbody 中（id=stbody）
+          var tbodystr = template('news-list', {list: data.list});
+          $('#stbody').html(tbodystr);
+
+        } else {
+          alert('获取数据失败！');
+        }
+      }
+    });
+  }
+
+
+
+
+
+    $(function () {
+
+      // 1. 为 加载数据 按钮注册点击事件
+      $('#btnLoad').click(function () {
+        // 调用加载学员数据的方法
+        loadAllStudents();
+
+      });
+
+
+
+      // 2. 为 查看超链接 注册点击事件
+      $('#stbody').on('click', 'a.info', function () {
+        // 1. 获取当前点击的超链接的 href 中的路径
+        // this
+
+        // 2. 向该路径发起请求（获取当前点击的这位学员的详细信息）
+        $.ajax({
+          url: $(this).attr('href'),
+          method: 'get',
+          dataType: 'json',
+          success: function (data) {
+            // console.log(data);
+            if (data.status === 0) {
+              // 通过模板引擎渲染
+              // 3. 把获取到的学员详细信息显示到 div 中
+              $('#dvInfo ul').html(template('news-details', {student: data.stu}));
+
+              // 显示 dvInfo
+              // 4. 把 div 显示出来
+              $('#dvInfo').show();
+            } else {
+              alert('获取学员详情出错了。')
+            }
+          }
+        });
+
+        // 5. 返回 false，避免超链接执行连接动作
+        return false;
+      });
+
+
+
+      // 3. 为 查看详情div 中的 关闭按钮注册点击事件
+      $('#btnCloseInfo').click(function () {
+        $('#dvInfo').hide();
+      });
+
+
+
+      // 4. 为添加学员超链接注册点击事件
+      $('#addLink').click(function () {
+        // 1. 通过 ajax 请求获取所有城市数据、专业数据
+        // 2. 通过 art-template 模板引擎把数据显示到 dvAdd 下面的对应的 select 标签中
+        $.ajax({
+          url: '/cities',
+          method: 'get',
+          dataType: 'json',
+          success: function (data) {
+            // console.log(data);
+            if (data.status === 0) {
+              $('#saddr').html(template('city-list', {list: data.cities}));
+            }
+          }
+        });
+
+        $.ajax({
+          url: '/majors',
+          method: 'get',
+          dataType: 'json',
+          success: function (data) {
+           if (data.status === 0) {
+              $('#smajor').html(template('major-list', {list: data.majors}));
+            }
+          }
+        });
+
+        // 3. 显示出 dvAdd 层
+        $('#dvAdd').show();
+
+        // 4. 
+        return false;
+      });
+
+
+
+      // 5. 实现 添加学员div中的关闭按钮 的点击事件
+      $('#btnCloseAdd').click(function () {
+        $('#dvAdd').hide();
+      });
+
+
+      // 6. 实现 添加一位学员操作
+      $('#btnSave').click(function () {
+        // 1. 获取表单中的数据
+        var postData = $('#addForm').serialize();
+        // console.log(postData);
+
+        // 2. 向服务器发起 post ajax 请求，将数据发送到服务器
+        $.ajax({
+          url: '/add',
+          method: 'post',
+          data: postData,
+          dataType: 'json',
+          success: function (data) {
+
+            console.log(data);
+            if (data.status === 0) {
+              // 隐藏 添加数据的 div
+              $('#dvAdd').hide();
+
+              // 重新加载 students 中的数据
+              loadAllStudents();
+            } else {
+              alert('添加学员失败！');
+            }
+          }
+        });
+
+
+        // 3. 根据服务器返回结果判断
+        // - 成功了： 重新加载学员数据
+        // - 失败了： 提示一下用户
+
+
+
+        return false;
+      });
+
+
+
+      // 7. 为 删除超链接 注册一个点击事件
+      $('#stbody').on('click', 'a.delete', function () {
+
+        // 判断用户是否真的要删除
+        if (window.confirm('确认要删除吗？')) {
+          // 1. 获取 href 中的链接地址
+          // $(this).attr('href')
+
+          // 2. 向该地址发起 ajax 请求
+          $.ajax({
+            url: $(this).attr('href'),
+            method: 'get',
+            dataType: 'json',
+            success: function (data) {
+
+              // 3. 判断服务器返回的结果
+              if (data.status === 0) {
+                // 删除数据成功
+                alert('删除成功！');
+                // 重新加载学员数据
+                loadAllStudents();
+              } else {
+                alert('失败!');
+              }
+            }
+          });
+        }
+
+        return false;
+      });
+
+
+
+
+      // 8. 为 编辑超链接 注册点击事件
+      $('#stbody').on('click', 'a.edit', function () {
+        // 1. 向服务器发起 ajax 请求获取 所有 城市信息、专业信息、当前点击的这位学员的详细信息
+
+        // 请求所有城市信息
+        $.ajax({
+          url: '/cities',
+          method: 'get',
+          dataType: 'json',
+          success: function (data) {
+            if (data.status === 0) {
+              $('#saddredit').html(template('city-list', {list: data.cities}));
+            }
+          }
+        });
+
+        // 请求所有专业信息
+        $.ajax({
+          url: '/majors',
+          method: 'get',
+          dataType: 'json',
+          success: function (data) {
+            if (data.status === 0) {
+              $('#smajoredit').html(template('major-list', {list: data.majors}));
+            }
+          }
+        });
+
+        // 请求当前点击的学员的信息
+        $.ajax({
+          url: $(this).attr('href'),
+          method: 'get',
+          dataType: 'json',
+          success: function (data) {
+            // data.stu
+            // console.log(data);
+            // $('#saddredit').val(['上海市']);
+
+            // 把 _id 放到隐藏域中
+            $('#_idedit').val(data.stu._id);
+            $('#snoedit').val(data.stu.sno);
+            $('#snameedit').val(data.stu.sname);
+
+            // jQuery 表单元素操作
+            $(':radio').val([data.stu.sgender === '男' ? 'M' : 'F']);
+            $('#sbirthdayedit').val(data.stu.sbirthday);
+            $('#sphoneedit').val(data.stu.sphone);
+
+            // jQuery 表单元素操作
+            $('#saddredit').val(data.stu.saddr);
+            $('#smajoredit').val(data.stu.smajor);
+          }
+        });
+
+
+
+        // 2. 通过 art-template 把数据渲染到 dvEdit 层中
+
+
+        // 3. 显示 dvEdit 层
+        $('#dvEdit').show();
+
+        return false;
+      });
+
+
+
+      // 9. 为 编辑div 中的 btnSaveedit 按钮注册点击事件
+      $('#btnSaveedit').click(function () {
+        // 1. 获取表单中用户输入的信息
+        var postData = $('#editForm').serialize();
+
+        // 2. 向服务器发起 ajax 请求，把这些数据提交给服务器
+        $.ajax({
+          url: '/update',
+          method: 'post',
+          data: postData,
+          dataType: 'json',
+          success: function (data) {
+
+            // 3. 获取服务器返回的结果，根据结果再判断
+            if (data.status === 0) {
+              // 提示
+              alert('成功！');
+              // 调用 loadAllStudents() 重新加载数据
+              loadAllStudents();
+
+              // 让表单中的所有元素都变成默认值
+              $('#editForm')[0].reset();
+
+              // 隐藏编辑 div
+              $('#dvEdit').hide();
+            } else {
+              alert('失败！');
+            }
+          }
+        });
+
+        return false;
+      });
+    });
+  </script>
+
+
+
+
+  <!-- 学员列表模板代码 -->
+  <script id="news-list" type="text/html">
+    <% for (var i = 0; i < list.length; i++) { %>
+      <tr>
+        <td>
+          <%= list[i]._id.slice(-5) %>
+        </td>
+        <td>
+          <%= list[i].sno %>
+        </td>
+        <td>
+          <%= list[i].sname %>
+        </td>
+        <td>
+          <%= list[i].sgender %>
+        </td>
+        <td>
+          <%= list[i].sbirthday %>
+        </td>
+        <td>
+          <%= list[i].sphone %>
+        </td>
+        <td>
+          <%= list[i].saddr %>
+        </td>
+        <td>
+          <%= list[i].smajor %>
+        </td>
+        <td><a class="info" href="/info?_id=<%= list[i]._id %>">查看</a> | <a class="edit" href="/info?_id=<%= list[i]._id %>">编辑</a> | <a class="delete" href="/delete?_id=<%= list[i]._id %>">删除</a></td>
+      </tr>
+      <% } %>
+  </script>
+
+
+
+
+  <!-- 学员详情模板代码 -->
+  <script id="news-details" type="text/html">
+    <% for (var key in student) { %>
+      <li>
+        <%= key %> : <%= student[key] %>
+      </li>
+    <% } %>
+  </script>
+
+
+
+
+  <!-- 添加学员模板代码 -->
+  <script id="city-list" type="text/html">
+    <% for (var i = 0; i < list.length; i++) { %>
+      <option value="<%= list[i].cname %>">
+        <%= list[i].cname %>
+      </option>
+      <% } %>
+  </script>
+
+  <script id="major-list" type="text/html">
+    <% for (var i = 0; i < list.length; i++) { %>
+      <option value="<%= list[i].name %>">
+        <%= list[i].name %>
+      </option>
+      <% } %>
+  </script>
+</head>
+
+<body>
+  <h1>学员信息管理系统</h1>
+  <p><a id="addLink" href="#">添加学员</a></p>
+  <p>
+    <button id="btnLoad">加载数据</button>
+  </p>
+  <!-- 数据列表 -->
+  <table border="1">
+    <thead>
+      <tr>
+        <th>序号</th>
+        <th>学号</th>
+        <th>姓名</th>
+        <th>性别</th>
+        <th>出生日期</th>
+        <th>联系电话</th>
+        <th>所属地</th>
+        <th>专业</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="stbody">
+
+    </tbody>
+  </table>
+
+
+  <!-- 显示学员详情界面 -->
+  <div id="dvInfo" style="display: none;">
+    <h1>学员详情</h1>
+    <ul>
+    </ul>
+    <button id="btnCloseInfo">关闭</button>
+  </div>
+  <!-- 显示编辑学员界面 -->
+  <div id="dvEdit" style="display: none;">
+    <h1>编辑学员信息</h1>
+    <form id="editForm">
+      <input type="hidden" name="_id" value="" id="_idedit">
+      <div>
+        <label for="sno">学号：</label>
+        <input type="text" name="sno" id="snoedit" value="">
+      </div>
+      <div>
+        <label for="sname">姓名：</label>
+        <input type="text" name="sname" id="snameedit" value="">
+      </div>
+      <div>
+        <span>性别：</span>
+        <label for="smale">男</label>
+        <input type="radio" name="sgender" id="smaleedit" value="M">
+        <label for="sfemale">女</label>
+        <input type="radio" name="sgender" id="sfemaleedit" value="F">
+      </div>
+      <div>
+        <label for="sbirthday">生日：</label>
+        <input type="date" name="sbirthday" id="sbirthdayedit" value="">
+      </div>
+      <div>
+        <label for="sphone">电话：</label>
+        <input type="text" name="sphone" id="sphoneedit" value="">
+      </div>
+      <div>
+        <label for="saddress">籍贯：</label>
+        <select name="saddr" id="saddredit">
+        </select>
+      </div>
+      <div>
+        <label for="smajor">专业：</label>
+        <select name="smajor" id="smajoredit">
+        </select>
+      </div>
+      <div>
+        <input type="submit" value="保存修改" id="btnSaveedit">
+      </div>
+    </form>
+  </div>
+  <!-- 显示添加学员界面 -->
+  <div id="dvAdd" style="display: none;">
+    <h1>添加学员</h1>
+    <form id="addForm">
+      <div>
+        <label for="sno">学号：</label>
+        <input type="text" name="sno" id="sno" value="">
+      </div>
+      <div>
+        <label for="sname">姓名：</label>
+        <input type="text" name="sname" id="sname" value="">
+      </div>
+      <div>
+        <span>性别：</span>
+        <label for="smale">男</label>
+        <input type="radio" name="sgender" id="smale" value="M">
+        <label for="sfemale">女</label>
+        <input type="radio" name="sgender" id="sfemale" value="F">
+      </div>
+      <div>
+        <label for="sbirthday">生日：</label>
+        <input type="date" name="sbirthday" id="sbirthday" value="">
+      </div>
+      <div>
+        <label for="sphone">电话：</label>
+        <input type="text" name="sphone" id="sphone" value="">
+      </div>
+      <div>
+        <label for="saddress">籍贯：</label>
+        <select name="saddr" id="saddr">
+        </select>
+      </div>
+      <div>
+        <label for="smajor">专业：</label>
+        <select name="smajor" id="smajor">
+        </select>
+      </div>
+      <div>
+        <input type="submit" value="保存学员信息" id="btnSave">
+        <input type="button" value="关闭" id="btnCloseAdd">
+      </div>
+    </form>
+  </div>
+</body>
+
+</html>
